@@ -1,7 +1,7 @@
 <?php
 
-add_action('woocommerce_thankyou', 'send_data_to_api');
-function send_data_to_api($order_id) {
+add_action('woocommerce_thankyou', 'ic_send_data_to_api');
+function ic_send_data_to_api($order_id) {
     // Get the order object
     $order = wc_get_order($order_id);
     $product = wc_get_product($order_id);
@@ -22,7 +22,7 @@ function send_data_to_api($order_id) {
     $billing_state = $order->get_billing_state();
     $billing_postcode = $order->get_billing_postcode();
     $billing_country = $order->get_billing_country();
-    $billing_emial = $order->get_billing_email();
+    $billing_email = $order->get_billing_email();
     $billing_phone = $order->get_billing_phone();
 
     $shipping_first_name = $order->get_shipping_first_name();
@@ -39,6 +39,7 @@ function send_data_to_api($order_id) {
     $shipping_address = $order->get_address();
 
     $created_date = $order->get_date_created();
+    $formatted_date = $created_date->format('Y-m-d H:i:s');
     $modified_date = $order->get_date_modified();
     $discount = $order->get_discount_total();
     $discount_tax = $order->get_discount_tax();
@@ -48,6 +49,7 @@ function send_data_to_api($order_id) {
     $cart_tax = $order->get_cart_tax();
     $total_tax = $order->get_total_tax();
     $customer_id = $order->get_customer_id();
+    $customer_note = $order->get_customer_note();
 
     $p_name = '';
     $product_items = [];
@@ -60,25 +62,25 @@ function send_data_to_api($order_id) {
         $total = $item->get_total();
         $tax = $item->get_subtotal_tax();
         $tax_class = $item->get_tax_class();
-        $sku = $sku;
+
+        $product = $item->get_product();
+        $sku = $product ? $product->get_sku() : '';
 
         $p_name .= $product_name;
 
         $product_items[] = [
-            "id" => $product_id,
             "name" => $product_name,
-            "product_id" => 886,
+            "product_id" => $product_id,
             "variation_id" => $variation_id,
             "quantity" => $quantity,
             "tax_class" => $tax_class,
             "subtotal" => $subtotal,
-            "subtotal_tax" => "0.00",
+            "subtotal_tax" => $tax,
             "total" => $total,
-            "total_tax" => $tax,
+            "total_tax" => $total_tax,
             "taxes" => [],
             "sku" => $sku,
             "price" => $total,
-            "parent_name" => $product_name
         ];
 
     }
@@ -86,20 +88,13 @@ function send_data_to_api($order_id) {
     // Prepare your API data
     $api_data = array(
         "id" => $order->get_id(),
-        "parent_id" => 0,
         "status" => $status,
         "currency" => $currency,
-        "date_created" => $created_date,
-        "date_modified" => $modified_date,
+        "date_created" => $formatted_date,
         "discount_total" => $discount,
-        "discount_tax" => $discount_tax,
-        "shipping_total" => $shipping_total,
-        "shipping_tax" => $shipping_tax,
-        "cart_tax" => $cart_tax,
         "total" => $total,
         "total_tax" => $total_tax,
         "customer_id" => $customer_id,
-        "order_key" => $order_key,
         "billing" => [
             "first_name" => $billing_first_name,
             "last_name" => $billing_last_name,
@@ -110,8 +105,8 @@ function send_data_to_api($order_id) {
             "state" => $billing_state,
             "postcode" => $billing_postcode,
             "country" => $billing_country,
-            "email" => $billing_emial,
-            "phone" => $billing_phone,
+            "email" => $billing_email,
+            "phone" => $billing_phone ?? '',
         ],
         "shipping" => [
             "first_name" => $shipping_first_name,
@@ -123,27 +118,27 @@ function send_data_to_api($order_id) {
             "state" => $shipping_state,
             "postcode" => $shipping_postcode,
             "country" => $shipping_country,
-            "phone" => ""
+            "phone" => '',
         ],
         "payment_method" => $payment_method,
         "payment_method_title" => $payment_method_name,
-        "line_items" => $product_items
+        "customer_note" => $customer_note ?? '',
+        "line_items" => $product_items,
     );
 
     // Make the API request
-    $product_url = 'http://127.0.0.1:8000/api/woocom-order';
+    // $product_url = 'http://127.0.0.1:8000/api/woocom-order';
+    $product_url = esc_url( sanitize_text_field( get_option( 'ic_product_api' ) ) );
     $response = ic_product_api_configuration( $product_url, $api_data );
 
     // Check for errors and handle the response as needed
     if (is_wp_error($response)) {
-        error_log( $p_name . ' - Something went wrong: ' . $response );
+        error_log( print_r($response, true) );
     } else {
         $response_code = wp_remote_retrieve_response_code($response);
         $response_body = wp_remote_retrieve_body($response);
-        // echo '<pre>';
-        //       print_r( $response_body );
-        // echo '</pre>';
-        error_log( $p_name . ' - Successfully created product ');     
-        error_log( $response_body );     
+        error_log( $p_name . ' - Successfully created product ');  
+
+        error_log( print_r($response_body, true) );
     }
 }

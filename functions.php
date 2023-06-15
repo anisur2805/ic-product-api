@@ -3,7 +3,7 @@
 function ic_product_api_configuration( $url, $data, $request_type = 'POST' ) {
     $bearer_token = get_option('ic_bearer_token_key');
 
-    $timeout = 15;
+    $timeout = 20;
     $headers = [
         'Content-Type' => 'application/json',
         'Authorization' => 'Bearer ' . $bearer_token,

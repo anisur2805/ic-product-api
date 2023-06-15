@@ -4,7 +4,7 @@
  * Description: Awesome Desc...
  * Plugin URI:  #
  * Version:     1.0
- * Author:      #
+ * Author:      ITclan BD
  * Author URI:  http://github.com/anisur2805/
  * Text Domain: ic-product-api
  * License:     GPL v2 or later

@@ -5,6 +5,9 @@ add_action('woocommerce_order_status_changed', 'ic_send_order_stock_update', 10,
 
 function ic_send_order_stock_update($order_id, $old_status, $new_status, $order) {
     
+    $ic_run_once = get_post_meta( $order_id, 'ic_custom_flag', true);   
+
+    if ( $ic_run_once === 'yes' ) {
         // $stock_url = 'http://127.0.0.1:8000/api/order-stock-update';
         $stock_url   = esc_url( sanitize_text_field( get_option( 'itc_order_api' ) ) );
 
@@ -49,9 +52,12 @@ function ic_send_order_stock_update($order_id, $old_status, $new_status, $order)
         } else {
             $response_code = wp_remote_retrieve_response_code($response);
             $response_body = wp_remote_retrieve_body($response);
-            error_log( $p_name . ' - Successfully updated product stock');
-            error_log( print_r( $stock_data, true )); 
+            error_log( $p_name . $order_id . ' - Successfully updated product stock');
+            // error_log( print_r( $stock_data, true )); 
             error_log( print_r( $response_body, true )); 
         }
+    }
+
+    
     // }
 }

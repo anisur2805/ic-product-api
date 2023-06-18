@@ -2,6 +2,7 @@
 
 add_action('woocommerce_thankyou', 'ic_send_data_to_api');
 function ic_send_data_to_api($order_id) {
+    $ic_run_once = 'no';
     // Get the order object
     $order = wc_get_order($order_id);
     $product = wc_get_product($order_id);
@@ -140,5 +141,9 @@ function ic_send_data_to_api($order_id) {
         error_log( $p_name . ' - Successfully created product ');  
 
         error_log( print_r($response_body, true) );
+
+        $ic_run_once = 'yes';
+        update_post_meta($order_id, 'ic_custom_flag', $ic_run_once);
+
     }
 }
